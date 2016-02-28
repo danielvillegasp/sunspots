@@ -1,0 +1,95 @@
+---
+title       : Sunspots and Temperature
+subtitle    : An Explorative Analisys of Sunspot Count and Earth Temperature
+author      : Daniel Villegas
+job         : 
+framework   : io2012        # {io2012, html5slides, shower, dzslides, ...}
+highlighter : highlight.js  # {highlight.js, prettify, highlight}
+hitheme     : tomorrow      # 
+widgets     : []            # {mathjax, quiz, bootstrap}
+mode        : selfcontained # {standalone, draft}
+knit        : slidify::knit2slides
+
+--- 
+## Introduction
+
+Some have claimed that global warming may be due to phenomena that take place in the 
+sun rather than to the carbon monoxide emissions produced by humans in the modern world.
+
+Here, an exploratory analisys of the data is done, seeking for evidence that might help
+further job to prove whether solar activity in fact has an impact over earth temperature.
+
+--- 
+## Solar Activity
+
+Many cycles that happen in the sun have been identified. Solar rotation occurs every 24.47 earth 
+days on average; sunspots maxima occur on average every 11 years.
+
+```{r sunspot-count, fig.align='center', message=F, echo=FALSE, warning=FALSE, fig.width=10, fig.height=6}
+  require(ggplot2)
+  sunspots.monthly <-  read.csv('../../data/Sunspots/cleaned/sunspots.montlhy.csv')
+  ggplot(sunspots.monthly, aes(x=as.Date(datetime), y=mean.cnt*10)) + 
+    geom_line() + 
+    geom_smooth() +
+    xlab("Date") + ylab("Sunspot Count") + ggtitle("Sunspot Count Over Time")
+
+```
+
+---
+## Land-Ocean Temperature Index
+
+To get the big picture of how temperature is behaving on earth with respect to time, 
+scientists created the LOTI which averages the temperature over a grid on the surface of the 
+earth and compare it to a logn term average of temperatures over the past years. The difference
+between this two quantities is the LOTI.
+
+LOTI is behaving has been growing for the last century, as show in the trend line.
+
+```{r loti-plot, fig.align='center', message=F, echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+  require(ggplot2)
+  LOTI <-  read.csv('../../data/Temperature/cleaned/temperature.csv')
+  ggplot(LOTI, aes(x=as.Date(datetime), y=LOTI)) + 
+    geom_line() + 
+    geom_smooth() +
+    xlab("Date") + ylab("LOTI") + ggtitle("LOTI Over Time")
+
+```
+
+---
+## Comparison between Sunspots and LOTI
+```{r loti-sp, fig.align='center', message=F, echo=FALSE, warning=FALSE, fig.width=12}
+  
+require(gtable)
+require(grid)
+require(dplyr)
+    p1<-ggplot(sunspots.monthly, 
+           aes(x=as.Date(datetime), y=mean.cnt * 10)) + geom_line(colour="blue") + 
+      geom_smooth(method=lm) + ylab("Count") + xlab("Date") + ggtitle("Sunspot count and LOTI  over time") + theme_bw()
+    p2 <- ggplot(LOTI,
+                 aes(x=as.Date(datetime), y=LOTI)) + geom_line(colour='red') +  
+      geom_smooth(method=lm) + ylab("LOTI") + theme_bw() %+replace% 
+      theme(panel.background = element_rect(fill = NA))
+    g1 <- ggplot_gtable(ggplot_build(p1))
+    g2 <- ggplot_gtable(ggplot_build(p2))
+    pp <- c(subset(g1$layout, name == "panel", se = t:r))
+    g <- gtable_add_grob(g1, g2$grobs[[which(g2$layout$name == "panel")]], pp$t, 
+                         pp$l, pp$b, pp$l)
+    ia <- which(g2$layout$name == "axis-l")
+    ga <- g2$grobs[[ia]]
+    ax <- ga$children[[2]]
+    ax$widths <- rev(ax$widths)
+    ax$grobs <- rev(ax$grobs)
+    ax$grobs[[1]]$x <- ax$grobs[[1]]$x - unit(1, "npc") + unit(0.15, "cm")
+    g <- gtable_add_cols(g, g2$widths[g2$layout[ia, ]$l], length(g$widths) - 1)
+    g <- gtable_add_grob(g, ax, pp$t, length(g$widths) - 1, pp$b)
+    grid.draw(g) 
+```
+
+---
+## Acknowledgements
+
+Information from the following websites was used to create this presentation, I want to 
+thank the people who have been working hard to collect and analize this data.
+
+1. [Marshall Space Flight Center](http://solarscience.msfc.nasa.gov)
+2. [Goddard Institute for Space Studies](http://data.giss.nasa.gov/gistemp/)
